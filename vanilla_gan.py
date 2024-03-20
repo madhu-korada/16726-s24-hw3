@@ -12,7 +12,7 @@
 
 import argparse
 import os
-
+import warnings
 import imageio
 import numpy as np
 import torch
@@ -24,6 +24,7 @@ from data_loader import get_data_loader
 from models import DCGenerator, DCDiscriminator
 from diff_augment import DiffAugment
 
+warnings.filterwarnings("ignore")
 
 policy = 'color,translation,cutout'
 
@@ -53,8 +54,8 @@ def print_models(G, D):
 def create_model(opts):
     """Builds the generators and discriminators.
     """
-    G = DCGenerator(noise_size=opts.noise_size, conv_dim=opts.conv_dim, debug=True)
-    D = DCDiscriminator(conv_dim=opts.conv_dim, debug=True)
+    G = DCGenerator(noise_size=opts.noise_size, conv_dim=opts.conv_dim, debug=False)
+    D = DCDiscriminator(conv_dim=opts.conv_dim, debug=False)
 
     print_models(G, D)
 
@@ -199,7 +200,7 @@ def training_loop(train_dataloader, opts):
             g_optimizer.zero_grad()
             G_loss.backward()
             g_optimizer.step()
-            import sys; sys.exit(0)
+            # import sys; sys.exit(0)
             # Print the log info
             if iteration % opts.log_step == 0:
                 print(

@@ -46,7 +46,7 @@ def conv(in_channels, out_channels, kernel_size, stride=2, padding=1,
          norm='batch', init_zero_weights=False, activ=None):
     """Create a convolutional layer, with optional normalization."""
     layers = []
-    conv_layer = nn.ConvTranspose2d(
+    conv_layer = nn.Conv2d(
         in_channels=in_channels, out_channels=out_channels,
         kernel_size=kernel_size, stride=stride, padding=padding,
         bias=norm is None
@@ -85,11 +85,12 @@ class DCGenerator(nn.Module):
             nn.BatchNorm2d(conv_dim*8),
             nn.ReLU()
         )
-        self.up_conv2 = up_conv(conv_dim*8, conv_dim*4, kernel_size=4, padding=1, norm='instance', activ='relu')
-        self.up_conv3 = up_conv(conv_dim*4, conv_dim*2, kernel_size=4, padding=1, norm='instance', activ='relu')
-        self.up_conv4 = up_conv(conv_dim*2, conv_dim, kernel_size=4, padding=1, norm='instance', activ='relu')
-        self.up_conv5 = up_conv(conv_dim, 3, kernel_size=4, padding=1, norm=None, activ='tanh')
-
+        self.up_conv2 = up_conv(conv_dim*8, conv_dim*4, kernel_size=3, padding=1, norm='instance', activ='relu')
+        self.up_conv3 = up_conv(conv_dim*4, conv_dim*2, kernel_size=3, padding=1, norm='instance', activ='relu')
+        self.up_conv4 = up_conv(conv_dim*2, conv_dim, kernel_size=3, padding=1, norm='instance', activ='relu')
+        self.up_conv5 = up_conv(conv_dim, 3, kernel_size=3, padding=1, norm=None, activ='tanh')
+        
+        
     def forward(self, z):
         """
         Generate an image given a sample of random noise.
@@ -106,18 +107,18 @@ class DCGenerator(nn.Module):
         ##   FILL THIS IN: FORWARD PASS   ##
         ###########################################
 
-        print(f"z: {z.shape}")
         out_conv1 = self.up_conv1(z)
-        print(f"out_conv1: {out_conv1.shape}")
         out_conv2 = self.up_conv2(out_conv1)
         out_conv3 = self.up_conv3(out_conv2)
         out_conv4 = self.up_conv4(out_conv3)
         out = self.up_conv5(out_conv4)
         if self.debug:
-            print(f"out_conv2: {out_conv2.shape}")
-            print(f"out_conv3: {out_conv3.shape}")
-            print(f"out_conv4: {out_conv4.shape}")
-            print(f"out: {out.shape}")
+            print(f"z: {z.shape}")
+            print(f"out_up_conv1: {out_conv1.shape}")
+            print(f"out_up_conv2: {out_conv2.shape}")
+            print(f"out_up_conv3: {out_conv3.shape}")
+            print(f"out_up_conv4: {out_conv4.shape}")
+            print(f"out: {out.shape}\n")
         return out
 
 
@@ -201,7 +202,7 @@ class DCDiscriminator(nn.Module):
             print(f"out_conv2: {out_conv2.shape}")
             print(f"out_conv3: {out_conv3.shape}")
             print(f"out_conv4: {out_conv4.shape}")
-            print(f"out_conv5: {out_conv5.shape}")
+            print(f"out_conv5: {out_conv5.shape}\n")
         return out_conv5.squeeze()
 
 
