@@ -12,10 +12,12 @@
 
 import argparse
 import os
+import time
 import warnings
 import imageio
 import numpy as np
 import torch
+import wandb
 import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 
@@ -106,21 +108,29 @@ def save_samples(G, fixed_noise, iteration, opts):
     grid = np.uint8(255 * (grid + 1) / 2)
 
     # merged = merge_images(X, fake_Y, opts)
-    path = os.path.join(opts.sample_dir, 'sample-{:06d}.png'.format(iteration))
+    image_name = 'sample-{:06d}.png'.format(iteration)
+    path = os.path.join(opts.sample_dir, image_name)
     imageio.imwrite(path, grid)
     print('Saved {}'.format(path))
+    
+    if opts.use_wandb:
+        wandb.log({"Generated Images": [wandb.Image(grid, caption="Generated Images")]})
 
 
 def save_images(images, iteration, opts, name):
     grid = create_image_grid(utils.to_data(images))
 
+    image_name = '{:s}-{:06d}.png'.format(name, iteration)
     path = os.path.join(
         opts.sample_dir,
-        '{:s}-{:06d}.png'.format(name, iteration)
+        image_name
     )
     grid = np.uint8(255 * (grid + 1) / 2)
     imageio.imwrite(path, grid)
     print('Saved {}'.format(path))
+    
+    if opts.use_wandb:
+        wandb.log({f"Real Images": [wandb.Image(grid, caption=image_name)]})
 
 
 def sample_noise(batch_size, dim):
@@ -145,7 +155,24 @@ def training_loop(train_dataloader, opts):
         * Saves checkpoints every opts.checkpoint_every iterations
         * Saves generated samples every opts.sample_every iterations
     """
-
+    if opts.use_wandb:
+        if opts.run_id:
+            wandb.init(
+                # Set the project name 
+                project="image-synthesis-assignment-3", 
+                # Set the experiment name
+                config=opts,
+                id=opts.run_id, 
+                resume="must"
+            )
+        else:
+            wandb.init(
+                # Set the project name 
+                project="image-synthesis-assignment-3", 
+                # Set the experiment name
+                config=opts
+            )
+    
     # Create generators and discriminators
     G, D = create_model(opts)
 
@@ -157,13 +184,16 @@ def training_loop(train_dataloader, opts):
     fixed_noise = sample_noise(opts.batch_size, opts.noise_size)  # B N 1 1
 
     iteration = 1
+    start_iter = 0
+    start_time = time.time()
 
     total_train_iters = opts.num_epochs * len(train_dataloader)
 
     for _ in range(opts.num_epochs):
 
         for batch in train_dataloader:
-
+            iter_start_time = time.time()
+            
             real_images = batch
             real_images = utils.to_var(real_images)
 
@@ -200,7 +230,10 @@ def training_loop(train_dataloader, opts):
             g_optimizer.zero_grad()
             G_loss.backward()
             g_optimizer.step()
-            # import sys; sys.exit(0)
+            
+            total_time = time.time() - start_time
+            iter_time = time.time() - iter_start_time
+            
             # Print the log info
             if iteration % opts.log_step == 0:
                 print(
@@ -215,6 +248,13 @@ def training_loop(train_dataloader, opts):
                 logger.add_scalar('D/total', D_total_loss, iteration)
                 logger.add_scalar('G/total', G_loss, iteration)
 
+                # Log metrics to wandb
+                if opts.use_wandb:
+                    wandb.log({"DCGAN Discriminator Fake Loss": D_fake_loss, "time": total_time, "iteration": iteration})
+                    wandb.log({"DCGAN Discriminator Real Loss": D_real_loss, "time": total_time, "iteration": iteration})
+                    wandb.log({"DCGAN Discriminator Total Loss": D_total_loss, "time": total_time, "iteration": iteration})
+                    wandb.log({"DCGAN Generator Total Loss": G_loss, "time": total_time, "iteration": iteration})
+            
             # Save the generated samples
             if iteration % opts.sample_every == 0:
                 save_samples(G, fixed_noise, iteration, opts)
@@ -225,6 +265,9 @@ def training_loop(train_dataloader, opts):
                 checkpoint(iteration, G, D, opts)
 
             iteration += 1
+        
+    if opts.use_wandb:
+        wandb.finish()
 
 
 def main(opts):
@@ -270,6 +313,8 @@ def create_parser():
     parser.add_argument('--log_step', type=int, default=10)
     parser.add_argument('--sample_every', type=int, default=200)
     parser.add_argument('--checkpoint_every', type=int, default=400)
+    parser.add_argument("--use_wandb", action="store_true") # Use wandb for logging
+    parser.add_argument("--run_id", default=None, type=str)
 
     return parser
 
