@@ -196,6 +196,9 @@ def training_loop(train_dataloader, opts):
             
             real_images = batch
             real_images = utils.to_var(real_images)
+            
+            if opts.use_diffaug:
+                real_images = DiffAugment(real_images, policy=policy)
 
             # TRAIN THE DISCRIMINATOR
             # 1. Compute the discriminator loss on real images
