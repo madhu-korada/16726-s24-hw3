@@ -46,7 +46,7 @@ def conv(in_channels, out_channels, kernel_size, stride=2, padding=1,
          norm='batch', init_zero_weights=False, activ=None):
     """Create a convolutional layer, with optional normalization."""
     layers = []
-    conv_layer = nn.Conv2d(
+    conv_layer = nn.ConvTranspose2d(
         in_channels=in_channels, out_channels=out_channels,
         kernel_size=kernel_size, stride=stride, padding=padding,
         bias=norm is None
@@ -73,18 +73,22 @@ def conv(in_channels, out_channels, kernel_size, stride=2, padding=1,
 
 class DCGenerator(nn.Module):
 
-    def __init__(self, noise_size, conv_dim=64):
+    def __init__(self, noise_size, conv_dim=32, debug=False):
         super().__init__()
 
         ###########################################
         ##   FILL THIS IN: CREATE ARCHITECTURE   ##
         ###########################################
-
-        self.up_conv1 = 
-        self.up_conv2 = 
-        self.up_conv3 = 
-        self.up_conv4 = 
-        self.up_conv5 = 
+        self.debug = debug
+        self.up_conv1 = nn.Sequential(
+            nn.ConvTranspose2d(noise_size, conv_dim*8, kernel_size=4, stride=1, padding=0, bias=False),
+            nn.BatchNorm2d(conv_dim*8),
+            nn.ReLU()
+        )
+        self.up_conv2 = up_conv(conv_dim*8, conv_dim*4, kernel_size=4, padding=1, norm='instance', activ='relu')
+        self.up_conv3 = up_conv(conv_dim*4, conv_dim*2, kernel_size=4, padding=1, norm='instance', activ='relu')
+        self.up_conv4 = up_conv(conv_dim*2, conv_dim, kernel_size=4, padding=1, norm='instance', activ='relu')
+        self.up_conv5 = up_conv(conv_dim, 3, kernel_size=4, padding=1, norm=None, activ='tanh')
 
     def forward(self, z):
         """
@@ -102,7 +106,19 @@ class DCGenerator(nn.Module):
         ##   FILL THIS IN: FORWARD PASS   ##
         ###########################################
 
-        pass
+        print(f"z: {z.shape}")
+        out_conv1 = self.up_conv1(z)
+        print(f"out_conv1: {out_conv1.shape}")
+        out_conv2 = self.up_conv2(out_conv1)
+        out_conv3 = self.up_conv3(out_conv2)
+        out_conv4 = self.up_conv4(out_conv3)
+        out = self.up_conv5(out_conv4)
+        if self.debug:
+            print(f"out_conv2: {out_conv2.shape}")
+            print(f"out_conv3: {out_conv3.shape}")
+            print(f"out_conv4: {out_conv4.shape}")
+            print(f"out: {out.shape}")
+        return out
 
 
 class ResnetBlock(nn.Module):
@@ -130,16 +146,16 @@ class CycleGenerator(nn.Module):
         ##   FILL THIS IN: CREATE ARCHITECTURE   ##
         ###########################################
 
-        # 1. Define the encoder part of the generator
-        self.conv1 = 
-        self.conv2 = 
+        # # 1. Define the encoder part of the generator
+        # self.conv1 = 
+        # self.conv2 = 
 
-        # 2. Define the transformation part of the generator
-        self.resnet_block = 
+        # # 2. Define the transformation part of the generator
+        # self.resnet_block = 
 
-        # 3. Define the decoder part of the generator
-        self.up_conv1 = 
-        self.up_conv2 = 
+        # # 3. Define the decoder part of the generator
+        # self.up_conv1 = 
+        # self.up_conv2 = 
 
     def forward(self, x):
         """
@@ -163,22 +179,30 @@ class CycleGenerator(nn.Module):
 class DCDiscriminator(nn.Module):
     """Architecture of the discriminator network."""
 
-    def __init__(self, conv_dim=64, norm='instance'):
+    def __init__(self, conv_dim=64, norm='instance', debug=False):
         super().__init__()
-        self.conv1 = conv(3, 32, 4, 2, 1, norm, False, 'relu')
-        self.conv2 = 
-        self.conv3 = 
-        self.conv4 = 
-        self.conv5 = 
+        self.debug = debug
+        self.conv1 = conv(3, conv_dim, kernel_size=4, norm=norm, activ='relu') #  TODO: verify these parameters
+        self.conv2 = conv(conv_dim, conv_dim*2, kernel_size=4, norm=norm, activ='relu')
+        self.conv3 = conv(conv_dim*2, conv_dim*4, kernel_size=4, norm=norm, activ='relu')
+        self.conv4 = conv(conv_dim*4, conv_dim*8, kernel_size=4, norm=norm, activ='relu')
+        self.conv5 = conv(conv_dim*8, 1, kernel_size=4, padding=0, norm=None, activ=None) #
 
     def forward(self, x):
         """Forward pass, x is (B, C, H, W)."""
-        x = self.conv1(x)
-        x = self.conv2(x)
-        x = self.conv3(x)
-        x = self.conv4(x)
-        x = self.conv5(x)
-        return x.squeeze()
+        out_conv1 = self.conv1(x)
+        out_conv2 = self.conv2(out_conv1)
+        out_conv3 = self.conv3(out_conv2)
+        out_conv4 = self.conv4(out_conv3)
+        out_conv5 = self.conv5(out_conv4)
+        if self.debug:
+            print(f"x: {x.shape}")
+            print(f"out_conv1: {out_conv1.shape}")
+            print(f"out_conv2: {out_conv2.shape}")
+            print(f"out_conv3: {out_conv3.shape}")
+            print(f"out_conv4: {out_conv4.shape}")
+            print(f"out_conv5: {out_conv5.shape}")
+        return out_conv5.squeeze()
 
 
 class PatchDiscriminator(nn.Module):
@@ -192,6 +216,7 @@ class PatchDiscriminator(nn.Module):
         ###########################################
 
         # Hint: it should look really similar to DCDiscriminator.
+        pass
 
 
     def forward(self, x):

@@ -5,7 +5,7 @@
 import glob
 import os
 
-import PIL.Image as Image
+from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 
@@ -37,17 +37,26 @@ def get_data_loader(data_path, opts):
         transforms.ToTensor(),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
     ])
+    
+    deluxe_transform = transforms.Compose([
+        transforms.Resize(opts.image_size, Image.BICUBIC),
+        transforms.RandomHorizontalFlip(),
+        transforms.RandomCrop(opts.image_size),
+        transforms.ToTensor(),
+        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+    ])
 
     if opts.data_preprocess == 'basic':
         train_transform = basic_transform
     elif opts.data_preprocess == 'deluxe':
         # todo: add your code here: below are some ideas for your reference
+        train_transform = deluxe_transform
         # load_size = int(1.1 * opts.image_size)
         # osize = [load_size, load_size]
         # transforms.Resize(osize, Image.BICUBIC)
         # transforms.RandomCrop(opts.image_size)
         # transforms.RandomHorizontalFlip()
-        pass
+        # pass
 
     dataset = CustomDataSet(
         os.path.join('data/', data_path), opts.ext, train_transform

@@ -53,8 +53,8 @@ def print_models(G, D):
 def create_model(opts):
     """Builds the generators and discriminators.
     """
-    G = DCGenerator(noise_size=opts.noise_size, conv_dim=opts.conv_dim)
-    D = DCDiscriminator(conv_dim=opts.conv_dim)
+    G = DCGenerator(noise_size=opts.noise_size, conv_dim=opts.conv_dim, debug=True)
+    D = DCDiscriminator(conv_dim=opts.conv_dim, debug=True)
 
     print_models(G, D)
 
@@ -171,10 +171,10 @@ def training_loop(train_dataloader, opts):
             D_real_loss = torch.mean((D(real_images) - 1) ** 2)
 
             # 2. Sample noise
-            noise = 
+            noise = sample_noise(opts.batch_size, opts.noise_size)
 
             # 3. Generate fake images from the noise
-            fake_images = 
+            fake_images = G(noise)
 
             # 4. Compute the discriminator loss on the fake images
             D_fake_loss = torch.mean((D(fake_images.detach())) ** 2)
@@ -187,19 +187,19 @@ def training_loop(train_dataloader, opts):
 
             # TRAIN THE GENERATOR
             # 1. Sample noise
-            noise = 
+            noise = sample_noise(opts.batch_size, opts.noise_size)
 
             # 2. Generate fake images from the noise
-            fake_images = 
+            fake_images = G(noise)
 
             # 3. Compute the generator loss
-            G_loss = 
+            G_loss = torch.mean((D(fake_images) - 1) ** 2) # TODO: verify this
 
             # update the generator G
             g_optimizer.zero_grad()
             G_loss.backward()
             g_optimizer.step()
-
+            import sys; sys.exit(0)
             # Print the log info
             if iteration % opts.log_step == 0:
                 print(
