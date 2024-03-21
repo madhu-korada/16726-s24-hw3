@@ -202,7 +202,8 @@ def training_loop(train_dataloader, opts):
 
             # TRAIN THE DISCRIMINATOR
             # 1. Compute the discriminator loss on real images
-            D_real_loss = torch.mean((D(real_images) - 1) ** 2)
+            D_real_out = D(real_images)
+            D_real_loss = torch.mean((D_real_out - 1) ** 2)
 
             # 2. Sample noise
             noise = sample_noise(opts.batch_size, opts.noise_size)
@@ -211,7 +212,8 @@ def training_loop(train_dataloader, opts):
             fake_images = G(noise)
 
             # 4. Compute the discriminator loss on the fake images
-            D_fake_loss = torch.mean((D(fake_images.detach())) ** 2)
+            D_fake_out = D(fake_images)
+            D_fake_loss = torch.mean(D_fake_out ** 2)
             D_total_loss = (D_real_loss + D_fake_loss) / 2
 
             # update the discriminator D
@@ -316,6 +318,7 @@ def create_parser():
     parser.add_argument('--log_step', type=int, default=10)
     parser.add_argument('--sample_every', type=int, default=200)
     parser.add_argument('--checkpoint_every', type=int, default=400)
+    
     parser.add_argument("--use_wandb", action="store_true") # Use wandb for logging
     parser.add_argument("--run_id", default=None, type=str)
 
