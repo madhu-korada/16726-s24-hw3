@@ -257,7 +257,10 @@ def training_loop(dataloader_X, dataloader_Y, opts):
         logger.add_scalar('D/YX/real', D_Y_loss, iteration)
         logger.add_scalar('D/XY/fake', D_X_loss, iteration)
         logger.add_scalar('D/YX/fake', D_Y_loss, iteration)
-
+        
+        total_time = time.time() - start_time
+        iter_time = time.time() - iter_start_time
+        
         # Log metrics to wandb
         if opts.use_wandb:
             wandb.log({"CycleGAN D_XY Real Loss": D_X_loss, "time": total_time, "iteration": iteration})      
@@ -323,9 +326,6 @@ def training_loop(dataloader_X, dataloader_Y, opts):
         
         g_loss.backward()
         g_optimizer.step()
-
-        total_time = time.time() - start_time
-        iter_time = time.time() - iter_start_time
             
         # Print the log info
         if iteration % opts.log_step == 0:
