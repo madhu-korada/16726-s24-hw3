@@ -140,23 +140,23 @@ class ResnetBlock(nn.Module):
 class CycleGenerator(nn.Module):
     """Architecture of the generator network."""
 
-    def __init__(self, conv_dim=64, init_zero_weights=False, norm='instance'):
+    def __init__(self, conv_dim=64, init_zero_weights=False, norm='instance', debug=False):
         super().__init__()
 
         ###########################################
         ##   FILL THIS IN: CREATE ARCHITECTURE   ##
         ###########################################
-
+        self.debug = debug
         # # 1. Define the encoder part of the generator
-        # self.conv1 = 
-        # self.conv2 = 
+        self.conv1 = conv(3, conv_dim, kernel_size=4, init_zero_weights=False, norm=norm, activ='relu')
+        self.conv2 = conv(conv_dim, conv_dim*2, kernel_size=4, init_zero_weights=False, norm=norm, activ='relu')
 
-        # # 2. Define the transformation part of the generator
-        # self.resnet_block = 
+        # 2. Define the transformation part of the generator
+        self.resnet_block = ResnetBlock(conv_dim*2, norm=norm, activ='relu')
 
-        # # 3. Define the decoder part of the generator
-        # self.up_conv1 = 
-        # self.up_conv2 = 
+        # 3. Define the decoder part of the generator
+        self.up_conv1 = up_conv(conv_dim*2, conv_dim, kernel_size=3, padding=1, norm=norm, activ='relu')
+        self.up_conv2 = up_conv(conv_dim, 3, kernel_size=3, padding=1, norm=None, activ='tanh')
 
     def forward(self, x):
         """
@@ -174,7 +174,20 @@ class CycleGenerator(nn.Module):
         ##   FILL THIS IN: FORWARD PASS   ##
         ###########################################
 
-        pass
+        out_conv1 = self.conv1(x)
+        out_conv2 = self.conv2(out_conv1)
+        out_resnet = self.resnet_block(out_conv2)
+        out_up_conv1 = self.up_conv1(out_resnet)
+        out = self.up_conv2(out_up_conv1)
+        
+        if self.debug:
+            print(f"x: {x.shape}")
+            print(f"out_conv1: {out_conv1.shape}")
+            print(f"out_conv2: {out_conv2.shape}")
+            print(f"out_resnet: {out_resnet.shape}")
+            print(f"out_up_conv1: {out_up_conv1.shape}")
+            print(f"out: {out.shape}\n")
+        return out
 
 
 class DCDiscriminator(nn.Module):
@@ -209,16 +222,23 @@ class DCDiscriminator(nn.Module):
 class PatchDiscriminator(nn.Module):
     """Architecture of the patch discriminator network."""
 
-    def __init__(self, conv_dim=64, norm='batch'):
+    def __init__(self, conv_dim=64, norm='batch', debug=False):
         super().__init__()
 
         ###########################################
         ##   FILL THIS IN: CREATE ARCHITECTURE   ##
         ###########################################
-
+        self.debug = debug
         # Hint: it should look really similar to DCDiscriminator.
-        pass
+        # self.conv1 = conv(3, conv_dim, kernel_size=4, stride=2, padding=1, norm=norm, activ='leaky') # TODO: verify these parameters
+        # self.conv2 = conv(conv_dim, conv_dim*2, kernel_size=4, stride=2, padding=1, norm=norm, activ='leaky')
+        # self.conv3 = conv(conv_dim*2, conv_dim*4, kernel_size=4, stride=2, padding=1, norm=norm, activ='leaky')
+        # self.conv4 = conv(conv_dim*4, 1, kernel_size=4, stride=2, padding=1, norm=None, activ='tanh')
 
+        self.conv1 = conv(3, conv_dim, kernel_size=4, stride=2, padding=1, norm='instance', activ='relu') # TODO: verify these parameters
+        self.conv2 = conv(conv_dim, conv_dim*2, kernel_size=4, stride=2, padding=1, norm='instance', activ='relu')
+        self.conv3 = conv(conv_dim*2, conv_dim*4, kernel_size=4, stride=2, padding=1, norm='instance', activ='relu')
+        self.conv4 = conv(conv_dim*4, 1, kernel_size=4, stride=2, padding=1, norm=None, activ=None)
 
     def forward(self, x):
 
@@ -226,12 +246,23 @@ class PatchDiscriminator(nn.Module):
         ##   FILL THIS IN: FORWARD PASS   ##
         ###########################################
 
-        pass
-
+        out_conv1 = self.conv1(x)
+        out_conv2 = self.conv2(out_conv1)
+        out_conv3 = self.conv3(out_conv2)
+        out = self.conv4(out_conv3)
+        if self.debug:
+            print(f"x: {x.shape}")
+            print(f"out_conv1: {out_conv1.shape}")
+            print(f"out_conv2: {out_conv2.shape}")
+            print(f"out_conv3: {out_conv3.shape}")
+            print(f"out: {out.shape}\n")
+        return out
+    
 
 if __name__ == "__main__":
     a = torch.rand(4, 3, 64, 64)
-    D = PatchDiscriminator()
+    D = PatchDiscriminator(debug=True)
+    # D = DCDiscriminator(debug=True)
     print(D(a).shape)
-    G = CycleGenerator()
+    G = CycleGenerator(debug=True)
     print(G(a).shape)
