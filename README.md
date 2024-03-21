@@ -10,7 +10,7 @@ python vanilla_gan.py --data_preprocess=basic --use_wandb
 
 
 ```
-python vanilla_gan.py--data_preprocess=basic --use_diffaug --use_wandb 
+python vanilla_gan.py --data_preprocess=basic --use_diffaug --use_wandb 
 ```
 
 
