@@ -38,5 +38,27 @@ python cycle_gan.py --disc patch --use_cycle_consistency_loss  --train_iters 100
 ```
 
 ```
+python cycle_gan.py --disc patch --use_wandb 
+```
+
+```
+python cycle_gan.py --disc patch --use_cycle_consistency_loss --use_wandb 
+```
+
+
+```
 python cycle_gan.py --disc dc --use_cycle_consistency_loss --use_wandb 
+```
+
+```
+python cycle_gan.py --disc patch --X apple2orange/apple --Y apple2orange/orange --use_wandb 
+```
+
+```
+python cycle_gan.py --disc patch --use_cycle_consistency_loss --X apple2orange/apple --Y apple2orange/orange --use_wandb 
+```
+
+
+```
+python cycle_gan.py --disc dc --use_cycle_consistency_loss --X apple2orange/apple --Y apple2orange/orange --use_wandb 
 ```
